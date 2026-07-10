@@ -1,0 +1,105 @@
+@page "/discover"
+@layout AppLayout
+@inject Api Api
+@inject NavigationManager Nav
+
+<PageTitle>Discover Mentors — MentorLink</PageTitle>
+
+<div class="pagehead">
+    <h1>Discover Mentors</h1>
+    <div class="searchbar">
+        <Icon Name="search" Size="16" />
+        <input class="inp" placeholder="Search by name, field, or company…"
+               @bind="search" @bind:event="oninput" @onkeyup="ApplyFilters" />
+    </div>
+</div>
+
+<div class="discover">
+    <aside class="filters">
+        <div class="fgroup">
+            <span class="lab">Field of Expertise</span>
+            @foreach (var field in allFields)
+            {
+                <label class="fopt" @onclick="() => ToggleField(field)" @onclick:preventDefault>
+                    <span class="cb @(selectedFields.Contains(field) ? "on" : "")"></span>@field
+                </label>
+            }
+        </div>
+        <div class="fgroup">
+            <span class="lab">Availability</span>
+            <div class="fopt" style="justify-content:space-between">
+                Available now
+                <button type="button" class="switch @(availableOnly ? "on" : "")" aria-label="Available now"
+                        @onclick="ToggleAvailable"></button>
+            </div>
+        </div>
+        <div class="fgroup">
+            <span class="lab">Minimum Rating</span>
+            <Stars Rating="minRating" Label="@($"{minRating:0.0}+")" />
+            <input type="range" min="0" max="5" step="0.5" style="width:100%; margin-top:10px; accent-color:var(--ink)"
+                   value="@minRating" @oninput="OnRatingInput" />
+        </div>
+    </aside>
+
+    @if (mentors is null)
+    {
+        <div class="loading" style="flex:1">Finding mentors…</div>
+    }
+    else
+    {
+        <div class="mgrid">
+            @foreach (var mentor in Filtered)
+            {
+                <div class="mcard">
+                    <Avatar Name="@mentor.Name" Size="lg" />
+                    <b>@mentor.Name</b>
+                    <span class="role-line">@mentor.Title · @mentor.Company</span>
+                    <span class="chip">@mentor.Field</span>
+                    <Stars Rating="@mentor.Rating" Label="@mentor.Rating.ToString("0.0")" />
+                    <span class="bio">@mentor.Bio</span>
+                    <button class="btn btn-dark btn-sm" @onclick="() => ViewProfile(mentor.UserId)">View Profile</button>
+                </div>
+            }
+            @if (!Filtered.Any())
+            {
+                <div class="empty-tab" style="grid-column:1/-1">No mentors match those filters.</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<MentorCardDto>? mentors;
+    private string search = "";
+    private readonly HashSet<string> selectedFields = new();
+    private List<string> allFields = new();
+    private bool availableOnly;
+    private double minRating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        mentors = await Api.DiscoverMentorsAsync() ?? new();
+        allFields = mentors.Select(m => m.Field).Distinct().OrderBy(f => f).ToList();
+    }
+
+    private IEnumerable<MentorCardDto> Filtered => (mentors ?? new())
+        .Where(m => selectedFields.Count == 0 || selectedFields.Contains(m.Field))
+        .Where(m => !availableOnly || m.Available)
+        .Where(m => m.Rating >= minRating)
+        .Where(m => string.IsNullOrWhiteSpace(search)
+            || m.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || m.Field.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || m.Company.Contains(search, StringComparison.OrdinalIgnoreCase));
+
+    private void ToggleField(string field)
+    {
+        if (!selectedFields.Remove(field)) selectedFields.Add(field);
+    }
+
+    private void ViewProfile(int userId) => Nav.NavigateTo($"/mentor/{userId}");
+
+    private void ToggleAvailable() => availableOnly = !availableOnly;
+    private void ApplyFilters() { }
+    private void OnRatingInput(ChangeEventArgs e)
+        => minRating = double.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+}

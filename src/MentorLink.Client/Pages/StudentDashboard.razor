@@ -1,0 +1,103 @@
+@page "/dashboard"
+@layout AppLayout
+@inject Api Api
+@inject AppState State
+@inject NavigationManager Nav
+
+<PageTitle>Dashboard — MentorLink</PageTitle>
+
+<div class="pagehead">
+    <div>
+        <h1>Welcome back, @FirstName</h1>
+        <p class="sub">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</p>
+    </div>
+</div>
+
+@if (data is null)
+{
+    <div class="loading">Loading your dashboard…</div>
+}
+else
+{
+    <div class="stats">
+        <div class="stat"><span class="lab">Active Mentors</span><b>@data.ActiveMentors</b><span>across your mentorships</span></div>
+        <div class="stat"><span class="lab">Goals In Progress</span><b>@data.GoalsInProgress</b><span>keep the streak going</span></div>
+        <div class="stat"><span class="lab">Unread Messages</span><b>@data.UnreadMessages</b><span>waiting in your inbox</span></div>
+    </div>
+
+    <div class="two-col">
+        <div class="sect">
+            <h3>Active Mentors</h3>
+            @if (data.Mentors.Count == 0)
+            {
+                <div class="empty-tab">No active mentors yet — find one in Discover.</div>
+            }
+            @foreach (var mentor in data.Mentors)
+            {
+                <div class="card mentor-card">
+                    <Avatar Name="@mentor.Name" Size="md" />
+                    <div class="info">
+                        <b>@mentor.Name</b>
+                        <span>@mentor.Field · @mentor.Company</span>
+                    </div>
+                    <span class="badge @(mentor.Available ? "badge-ok" : "badge-grey")">
+                        @if (mentor.Available)
+                        {
+                            <span class="dot"></span>
+                        }
+                        @(mentor.Available ? "Available" : "Busy")
+                    </span>
+                    <button class="btn btn-dark btn-sm" @onclick="() => OpenChat(mentor.UserId)">Message</button>
+                </div>
+            }
+        </div>
+
+        <div class="sect">
+            <h3>My Goals</h3>
+            @if (data.Goals.Count == 0)
+            {
+                <div class="empty-tab">No goals yet — add one from My Goals.</div>
+            }
+            @foreach (var goal in data.Goals)
+            {
+                <div class="card goal-mini">
+                    <div class="row spread gap12">
+                        <b style="font-size:14.5px">@goal.Title</b>
+                        <span class="chip">@Label(goal.Type)</span>
+                    </div>
+                    <div class="row">
+                        <div class="prog"><i style="width:@(goal.Progress)%"></i></div>
+                        <span class="pct">@(goal.Progress)%</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="cta-banner">
+        <div>
+            <h3>Looking for a new mentor?</h3>
+            <p>Browse verified mentors across every field on MentorLink.</p>
+        </div>
+        <a class="discover-link" href="/discover">
+            Discover Now <span class="go"><Icon Name="arrow" Size="18" /></span>
+        </a>
+    </div>
+}
+
+@code {
+    private StudentDashboardDto? data;
+
+    private string FirstName => (State.CurrentUser?.FullName ?? "").Split(' ').FirstOrDefault() ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await State.EnsureLoadedAsync();
+        if (State.CurrentUser is null) return;
+        data = await Api.GetStudentDashboardAsync(State.CurrentUser.Id);
+    }
+
+    private void OpenChat(int userId) => Nav.NavigateTo($"/messages?with={userId}");
+
+    private static string Label(GoalType type) => type == GoalType.PersonalGrowth ? "Personal Growth" : type.ToString();
+}

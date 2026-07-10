@@ -1,0 +1,48 @@
+@inject AppState State
+@inject NavigationManager Nav
+
+<aside class="sb">
+    <a class="logo" href="/">
+        <span class="mark"><Icon Name="link" Size="15" /></span>MentorLink
+    </a>
+    <nav>
+        @if (IsMentor)
+        {
+            <NavLink href="/mentor-dashboard"><Icon Name="home" Size="17" />Dashboard</NavLink>
+            <NavLink href="/messages"><Icon Name="chat" Size="17" />Messages</NavLink>
+            <NavLink href="/notifications"><Icon Name="bell" Size="17" />Notifications</NavLink>
+            <NavLink href="/settings"><Icon Name="set" Size="17" />Settings</NavLink>
+        }
+        else
+        {
+            <NavLink href="/dashboard"><Icon Name="home" Size="17" />Dashboard</NavLink>
+            <NavLink href="/discover"><Icon Name="compass" Size="17" />Discover Mentors</NavLink>
+            <NavLink href="/messages"><Icon Name="chat" Size="17" />Messages</NavLink>
+            <NavLink href="/goals"><Icon Name="flag" Size="17" />My Goals</NavLink>
+            <NavLink href="/mentorships"><Icon Name="users" Size="17" />My Mentorships</NavLink>
+            <NavLink href="/notifications"><Icon Name="bell" Size="17" />Notifications</NavLink>
+            <NavLink href="/settings"><Icon Name="set" Size="17" />Settings</NavLink>
+        }
+    </nav>
+    <div class="me">
+        <Avatar Name="@(State.CurrentUser?.FullName ?? "")" Size="sm" />
+        <div>
+            <b>@State.CurrentUser?.FullName</b>
+            <span>@RoleLine</span>
+        </div>
+        <button class="signout" title="Sign out" @onclick="SignOut"><Icon Name="out" Size="15" /></button>
+    </div>
+</aside>
+
+@code {
+    private bool IsMentor => State.CurrentUser?.Role == UserRole.Mentor;
+
+    private string RoleLine => State.CurrentUser is null ? ""
+        : $"{State.CurrentUser.Role} · {State.CurrentUser.Field}";
+
+    private async Task SignOut()
+    {
+        await State.SignOutAsync();
+        Nav.NavigateTo("/");
+    }
+}

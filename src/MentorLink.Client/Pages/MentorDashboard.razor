@@ -1,0 +1,123 @@
+@page "/mentor-dashboard"
+@layout AppLayout
+@inject Api Api
+@inject AppState State
+@inject NavigationManager Nav
+
+<PageTitle>Mentor Dashboard — MentorLink</PageTitle>
+
+<div class="pagehead">
+    <div>
+        <h1>Welcome back, @ShortName</h1>
+        <p class="sub">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</p>
+    </div>
+</div>
+
+@if (data is null)
+{
+    <div class="loading">Loading your dashboard…</div>
+}
+else
+{
+    <div class="stats">
+        <div class="stat"><span class="lab">Active Mentees</span><b>@data.ActiveMentees</b><span>across your mentorships</span></div>
+        <div class="stat"><span class="lab">Pending Requests</span><b>@data.PendingRequests</b><span>waiting on your decision</span></div>
+        <div class="stat"><span class="lab">Sessions This Month</span><b>@data.SessionsThisMonth</b><span>keep it up</span></div>
+    </div>
+
+    <div class="sect" style="margin-bottom:26px">
+        <h3>Pending Requests</h3>
+        @if (data.Requests.Count == 0)
+        {
+            <div class="empty-tab">No pending requests — you're all caught up.</div>
+        }
+        @foreach (var request in data.Requests)
+        {
+            <div class="card reqcard">
+                <Avatar Name="@request.StudentName" Size="md" />
+                <div class="rbody">
+                    <div class="row1">
+                        <b>@request.StudentName</b>
+                        <span class="mut small">@request.StudentField</span>
+                        <span class="chip">@Label(request.GoalType)</span>
+                    </div>
+                    <p class="msgprev">"@request.Message"</p>
+                    <span class="mut small">Received @request.CreatedAt.ToLocalTime().ToString("MMM d, yyyy") · prefers @request.Frequency.ToLower() sessions</span>
+                </div>
+                <div class="acts">
+                    <button class="btn btn-dark btn-sm" @onclick="() => Accept(request.Id)">Accept</button>
+                    <button class="btn btn-out btn-sm" @onclick="() => Decline(request.Id)">Decline</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="sect">
+        <h3>Active Mentees</h3>
+        @if (data.Mentees.Count == 0)
+        {
+            <div class="empty-tab">No active mentees yet — accept a request to get started.</div>
+        }
+        @foreach (var mentee in data.Mentees)
+        {
+            <div class="mentee-row">
+                <Avatar Name="@mentee.Name" />
+                <div class="mb"><b>@mentee.Name</b><span>@mentee.Field</span></div>
+                <div class="mg">
+                    <span>@mentee.GoalTitle</span>
+                    <div class="row">
+                        <div class="prog"><i style="width:@(mentee.Progress)%"></i></div>
+                        <span class="pct">@(mentee.Progress)%</span>
+                    </div>
+                </div>
+                <span class="last">
+                    @(mentee.LastSessionAt is null ? "No sessions yet" : $"Last session {mentee.LastSessionAt.Value.ToLocalTime():MMM d}")
+                </span>
+                <button class="btn btn-dark btn-sm" @onclick="() => OpenChat(mentee.StudentId)">Message</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private MentorDashboardDto? data;
+
+    private string ShortName
+    {
+        get
+        {
+            var name = State.CurrentUser?.FullName ?? "";
+            var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return name.StartsWith("Dr.") && parts.Length > 1 ? $"Dr. {parts[^1]}" : parts.FirstOrDefault() ?? "";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await State.EnsureLoadedAsync();
+        if (State.CurrentUser is null) return;
+        data = await Api.GetMentorDashboardAsync(State.CurrentUser.Id);
+    }
+
+    private async Task Accept(int requestId)
+    {
+        await Api.AcceptRequestAsync(requestId);
+        await Reload();
+    }
+
+    private async Task Decline(int requestId)
+    {
+        await Api.DeclineRequestAsync(requestId);
+        await Reload();
+    }
+
+    private async Task Reload()
+    {
+        if (State.CurrentUser is not null)
+            data = await Api.GetMentorDashboardAsync(State.CurrentUser.Id);
+    }
+
+    private void OpenChat(int userId) => Nav.NavigateTo($"/messages?with={userId}");
+
+    private static string Label(GoalType type) => type == GoalType.PersonalGrowth ? "Personal Growth" : type.ToString();
+}

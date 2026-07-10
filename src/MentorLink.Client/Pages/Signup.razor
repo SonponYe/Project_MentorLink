@@ -1,0 +1,92 @@
+@page "/signup"
+@layout PublicLayout
+@inject Api Api
+@inject AppState State
+@inject NavigationManager Nav
+
+<PageTitle>Sign Up — MentorLink</PageTitle>
+
+<div class="auth">
+    <div class="auth-card">
+        <a class="logo-inline" href="/">
+            <span class="mark"><Icon Name="link" Size="15" /></span>MentorLink
+        </a>
+        <h1>Create your account</h1>
+        <p class="sub">Choose how you want to use MentorLink.</p>
+
+        <div class="roles">
+            <button type="button" class="role @(role == UserRole.Student ? "on" : "")" @onclick="() => role = UserRole.Student">
+                <Icon Name="user" Size="20" />
+                <b>I am a Student</b>
+                <span>Looking for guidance</span>
+            </button>
+            <button type="button" class="role @(role == UserRole.Mentor ? "on" : "")" @onclick="() => role = UserRole.Mentor">
+                <Icon Name="users" Size="20" />
+                <b>I am a Mentor</b>
+                <span>Ready to give back</span>
+            </button>
+        </div>
+
+        @if (error is not null)
+        {
+            <div class="form-error">@error</div>
+        }
+
+        <div class="field">
+            <label for="su-name">Full Name</label>
+            <input class="inp" id="su-name" placeholder="e.g. Amara Osei" @bind="fullName" />
+        </div>
+        <div class="field">
+            <label for="su-email">Email</label>
+            <input class="inp" id="su-email" type="email" placeholder="you@university.edu" @bind="email" />
+        </div>
+        <div class="field">
+            <label for="su-field">Field of Study or Industry</label>
+            <input class="inp" id="su-field" placeholder="e.g. Computer Science" @bind="field" />
+        </div>
+        <div class="field">
+            <label for="su-pass">Password</label>
+            <input class="inp" id="su-pass" type="password" placeholder="At least 8 characters" @bind="password" />
+        </div>
+
+        <button class="btn btn-dark btn-lg" disabled="@busy" @onclick="Submit">
+            @(busy ? "Creating account…" : "Continue")
+        </button>
+        <p class="auth-foot">Already have an account? <a href="/login">Log In</a></p>
+    </div>
+</div>
+
+@code {
+    private UserRole role = UserRole.Student;
+    private string fullName = "", email = "", field = "", password = "";
+    private string? error;
+    private bool busy;
+
+    private async Task Submit()
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            error = "Please fill in your name, email, and password.";
+            return;
+        }
+        if (password.Length < 8)
+        {
+            error = "Your password needs at least 8 characters.";
+            return;
+        }
+
+        busy = true;
+        var (user, apiError) = await Api.SignupAsync(new SignupRequest(fullName, email, field, password, role));
+        busy = false;
+
+        if (user is null)
+        {
+            error = string.IsNullOrWhiteSpace(apiError) ? "Something went wrong — try again." : apiError.Trim('"');
+            return;
+        }
+
+        await State.SignInAsync(user);
+        Nav.NavigateTo(user.Role == UserRole.Mentor ? "/mentor-dashboard" : "/dashboard");
+    }
+}

@@ -1,0 +1,100 @@
+@page "/mentorships"
+@layout AppLayout
+@inject Api Api
+@inject AppState State
+@inject NavigationManager Nav
+
+<PageTitle>My Mentorships — MentorLink</PageTitle>
+
+<div class="pagehead"><h1>My Mentorships</h1></div>
+
+<div class="tabs">
+    <button class="@(tab == 0 ? "on" : "")" @onclick="() => tab = 0">Active</button>
+    <button class="@(tab == 1 ? "on" : "")" @onclick="() => tab = 1">Pending</button>
+    <button class="@(tab == 2 ? "on" : "")" @onclick="() => tab = 2">Past</button>
+</div>
+
+@if (mentorships is null)
+{
+    <div class="loading">Loading mentorships…</div>
+}
+else
+{
+    var visible = tab switch
+    {
+        0 => mentorships.Where(m => !m.IsPendingRequest && m.Status == MentorshipStatus.Active),
+        1 => mentorships.Where(m => m.IsPendingRequest),
+        _ => mentorships.Where(m => !m.IsPendingRequest && m.Status == MentorshipStatus.Completed)
+    };
+
+    if (!visible.Any())
+    {
+        <div class="empty-tab">
+            @(tab switch
+            {
+                0 => "No active mentorships — discover a mentor to get started.",
+                1 => "No pending requests right now.",
+                _ => "No completed mentorships yet."
+            })
+        </div>
+    }
+
+    @foreach (var mentorship in visible)
+    {
+        <div class="card mship">
+            <Avatar Name="@mentorship.PartnerName" Size="md" />
+            <div class="info">
+                <b>@mentorship.PartnerName</b>
+                <span>@mentorship.PartnerRoleLine</span>
+            </div>
+            <div class="goal">
+                <div class="g1">@mentorship.GoalTitle</div>
+                @if (!mentorship.IsPendingRequest && mentorship.Status == MentorshipStatus.Active)
+                {
+                    <div class="row">
+                        <div class="prog"><i style="width:@(mentorship.Progress)%"></i></div>
+                        <span class="pct">@(mentorship.Progress)%</span>
+                    </div>
+                }
+            </div>
+
+            @if (mentorship.IsPendingRequest)
+            {
+                <span class="badge badge-grey">Awaiting Response</span>
+            }
+            else if (mentorship.Status == MentorshipStatus.Completed)
+            {
+                <span class="badge badge-dark">Completed</span>
+                <div class="acts">
+                    <button class="btn btn-out btn-sm" @onclick="() => ViewMentor(mentorship.PartnerId)">Leave a Review</button>
+                </div>
+            }
+            else
+            {
+                <span class="meta">
+                    @(mentorship.LastSessionAt is null ? "No sessions yet" : $"Last session {mentorship.LastSessionAt.Value.ToLocalTime():MMM d, yyyy}")
+                </span>
+                <div class="acts">
+                    <button class="btn btn-dark btn-sm" @onclick="() => OpenChat(mentorship.PartnerId)">Message</button>
+                    <button class="btn btn-out btn-sm" @onclick="ViewGoals">View Goals</button>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<MentorshipDto>? mentorships;
+    private int tab;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await State.EnsureLoadedAsync();
+        if (State.CurrentUser is null) return;
+        mentorships = await Api.GetMentorshipsAsync(State.CurrentUser.Id);
+    }
+
+    private void OpenChat(int userId) => Nav.NavigateTo($"/messages?with={userId}");
+    private void ViewMentor(int userId) => Nav.NavigateTo($"/mentor/{userId}");
+    private void ViewGoals() => Nav.NavigateTo("/goals");
+}

@@ -1,0 +1,108 @@
+@page "/mentor/{UserId:int}"
+@layout AppLayout
+@inject Api Api
+@inject NavigationManager Nav
+
+<PageTitle>Mentor Profile — MentorLink</PageTitle>
+
+@if (profile is null)
+{
+    <div class="loading">Loading profile…</div>
+}
+else
+{
+    <div class="phead">
+        <Avatar Name="@profile.Card.Name" Size="xl" />
+        <div class="pinfo">
+            <h1>@profile.Card.Name</h1>
+            <p class="role-line">@profile.Card.Title · @profile.Card.Company</p>
+            <div class="row gap12" style="flex-wrap:wrap">
+                <span class="chip">@profile.Card.Field</span>
+                <span class="badge @(profile.Card.Available ? "badge-ok" : "badge-grey")">
+                    @if (profile.Card.Available)
+                    {
+                        <span class="dot"></span>
+                    }
+                    else
+                    {
+                        <span class="dot dot-busy"></span>
+                    }
+                    @(profile.Card.Available ? "Available" : "Busy")
+                </span>
+                <Stars Rating="@profile.Card.Rating" Label="@($"{profile.Card.Rating:0.0} · {profile.Card.ReviewCount} reviews")" />
+            </div>
+        </div>
+        <button class="btn btn-dark" @onclick="RequestMentorship">Request Mentorship</button>
+    </div>
+
+    <div class="tabs">
+        <button class="@(tab == 0 ? "on" : "")" @onclick="() => tab = 0">About</button>
+        <button class="@(tab == 1 ? "on" : "")" @onclick="() => tab = 1">Expertise</button>
+        <button class="@(tab == 2 ? "on" : "")" @onclick="() => tab = 2">Reviews</button>
+    </div>
+
+    @if (tab == 0)
+    {
+        <div class="card" style="padding:26px">
+            <p class="bio-block">@profile.FullBio</p>
+            <div class="soc">
+                @if (!string.IsNullOrEmpty(profile.LinkedInUrl))
+                {
+                    <a href="@profile.LinkedInUrl" target="_blank" rel="noopener" aria-label="LinkedIn"><Icon Name="in" Size="16" /></a>
+                }
+                @if (!string.IsNullOrEmpty(profile.TwitterUrl))
+                {
+                    <a href="@profile.TwitterUrl" target="_blank" rel="noopener" aria-label="Twitter"><Icon Name="tw" Size="16" /></a>
+                }
+            </div>
+        </div>
+    }
+    else if (tab == 1)
+    {
+        <div class="card" style="padding:26px">
+            <span class="lab" style="display:block; margin-bottom:14px">Skills &amp; Topics</span>
+            <div class="skills">
+                @foreach (var skill in profile.Skills)
+                {
+                    <span class="chip">@skill</span>
+                }
+                @if (profile.Skills.Length == 0)
+                {
+                    <span class="mut small">This mentor hasn't listed skills yet.</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var review in profile.Reviews)
+        {
+            <div class="card review">
+                <div class="who">
+                    <Avatar Name="@review.StudentName" Size="sm" />
+                    <div>
+                        <b>@review.StudentName</b>
+                        <Stars Rating="@review.Rating" />
+                    </div>
+                </div>
+                <p>"@review.Text"</p>
+            </div>
+        }
+        @if (profile.Reviews.Count == 0)
+        {
+            <div class="empty-tab">No reviews yet.</div>
+        }
+    }
+}
+
+@code {
+    [Parameter] public int UserId { get; set; }
+
+    private MentorProfileDto? profile;
+    private int tab;
+
+    protected override async Task OnParametersSetAsync()
+        => profile = await Api.GetMentorProfileAsync(UserId);
+
+    private void RequestMentorship() => Nav.NavigateTo($"/request/{UserId}");
+}

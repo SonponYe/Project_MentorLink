@@ -1,0 +1,108 @@
+@page "/settings"
+@layout AppLayout
+@inject Api Api
+@inject AppState State
+
+<PageTitle>Settings — MentorLink</PageTitle>
+
+<div class="pagehead"><h1>Settings</h1></div>
+
+<div class="set-layout">
+    <div class="set-menu">
+        <button class="@(section == "profile" ? "on" : "")" @onclick=@(() => section = "profile")>Profile</button>
+        <button class="@(section == "account" ? "on" : "")" @onclick=@(() => section = "account")>Account</button>
+        <button class="@(section == "notifications" ? "on" : "")" @onclick=@(() => section = "notifications")>Notifications</button>
+        <button class="@(section == "privacy" ? "on" : "")" @onclick=@(() => section = "privacy")>Privacy</button>
+    </div>
+
+    <div class="set-body">
+        @if (section == "profile")
+        {
+            <div class="card" style="padding:28px">
+                <span class="lab" style="display:block; margin-bottom:18px">Profile</span>
+                <div class="avatar-up">
+                    <Avatar Name="@fullName" Size="lg" />
+                    <button class="change" title="Photo upload is on the roadmap">Change Photo</button>
+                </div>
+                <div class="fgrid">
+                    <div class="field"><label for="st-name">Full Name</label><input class="inp" id="st-name" @bind="fullName" /></div>
+                    <div class="field"><label for="st-email">Email</label><input class="inp" id="st-email" type="email" @bind="email" /></div>
+                    <div class="field wide"><label for="st-field">Field of Study or Industry</label><input class="inp" id="st-field" @bind="field" /></div>
+                    <div class="field wide"><label for="st-bio">Short Bio</label><textarea class="inp" id="st-bio" style="min-height:84px" @bind="bio"></textarea></div>
+                    <div class="field"><label for="st-in">LinkedIn URL</label><input class="inp" id="st-in" placeholder="linkedin.com/in/…" @bind="linkedIn" /></div>
+                    <div class="field"><label for="st-tw">Twitter URL</label><input class="inp" id="st-tw" placeholder="twitter.com/…" @bind="twitter" /></div>
+                </div>
+                <div class="row" style="justify-content:flex-end">
+                    @if (saved)
+                    {
+                        <span class="save-note">Saved ✓</span>
+                    }
+                    <button class="btn btn-dark" disabled="@busy" @onclick="Save">@(busy ? "Saving…" : "Save Changes")</button>
+                </div>
+            </div>
+        }
+        else if (section == "notifications")
+        {
+            <div class="card" style="padding:24px 28px">
+                <span class="lab" style="display:block; margin-bottom:8px">Notifications</span>
+                <div class="tog-row">
+                    <div><b>Email Notifications</b><span>Weekly digest and important account activity</span></div>
+                    <button type="button" class="switch @(togEmail ? "on" : "")" aria-label="Email notifications" @onclick="() => togEmail = !togEmail"></button>
+                </div>
+                <div class="tog-row">
+                    <div><b>In-App Notifications</b><span>Activity inside MentorLink while you're signed in</span></div>
+                    <button type="button" class="switch @(togInApp ? "on" : "")" aria-label="In-app notifications" @onclick="() => togInApp = !togInApp"></button>
+                </div>
+                <div class="tog-row">
+                    <div><b>Mentorship Request Alerts</b><span>When a request is accepted, declined, or received</span></div>
+                    <button type="button" class="switch @(togRequests ? "on" : "")" aria-label="Mentorship request alerts" @onclick="() => togRequests = !togRequests"></button>
+                </div>
+                <div class="tog-row">
+                    <div><b>Goal Reminder Alerts</b><span>Nudges when a milestone is due or going stale</span></div>
+                    <button type="button" class="switch @(togGoals ? "on" : "")" aria-label="Goal reminder alerts" @onclick="() => togGoals = !togGoals"></button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card" style="padding:28px">
+                <span class="lab" style="display:block; margin-bottom:10px">@(section == "account" ? "Account" : "Privacy")</span>
+                <p class="mut" style="font-size:13.5px">
+                    @(section == "account"
+                        ? "Password changes and account deletion will live here."
+                        : "Profile visibility and data controls will live here.")
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string section = "profile";
+    private string fullName = "", email = "", field = "", bio = "", linkedIn = "", twitter = "";
+    private bool togEmail = true, togInApp = true, togRequests = true, togGoals;
+    private bool busy, saved;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await State.EnsureLoadedAsync();
+        var user = State.CurrentUser;
+        if (user is null) return;
+        fullName = user.FullName; email = user.Email; field = user.Field;
+        bio = user.Bio; linkedIn = user.LinkedInUrl; twitter = user.TwitterUrl;
+    }
+
+    private async Task Save()
+    {
+        if (State.CurrentUser is null) return;
+        busy = true; saved = false;
+        var updated = await Api.UpdateProfileAsync(State.CurrentUser.Id,
+            new UpdateProfileRequest(fullName, email, field, bio, linkedIn, twitter));
+        busy = false;
+        if (updated is not null)
+        {
+            await State.SignInAsync(updated);
+            saved = true;
+        }
+    }
+}
