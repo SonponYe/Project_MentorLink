@@ -1,5 +1,6 @@
 using MentorLink.Api.Data;
 using MentorLink.Shared.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace MentorLink.Api.Controllers;
 
 [ApiController]
 [Route("api/notifications")]
+[Authorize]
 public class NotificationsController : ControllerBase
 {
     private readonly AppDbContext _db;

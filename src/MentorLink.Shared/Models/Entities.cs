@@ -13,13 +13,19 @@ public class User
     public int Id { get; set; }
     public string FullName { get; set; } = "";
     public string Email { get; set; } = "";
-    // Demo credential storage — replace with ASP.NET Identity / Supabase Auth before production.
+    // PBKDF2 hash ("iterations.salt.hash"), produced by Api.Services.PasswordHasher.
     public string Password { get; set; } = "";
     public UserRole Role { get; set; }
     public string Field { get; set; } = "";
     public string Bio { get; set; } = "";
     public string LinkedInUrl { get; set; } = "";
     public string TwitterUrl { get; set; } = "";
+    public string? PhotoUrl { get; set; }
+    public bool EmailNotifs { get; set; } = true;
+    public bool InAppNotifs { get; set; } = true;
+    public bool RequestAlerts { get; set; } = true;
+    public bool GoalAlerts { get; set; }
+    public bool IsPublic { get; set; } = true;
 }
 
 public class MentorProfile

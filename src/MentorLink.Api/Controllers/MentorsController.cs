@@ -1,6 +1,7 @@
 using MentorLink.Api.Data;
 using MentorLink.Shared.Dtos;
 using MentorLink.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace MentorLink.Api.Controllers;
 
 [ApiController]
 [Route("api/mentors")]
+[Authorize]
 public class MentorsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -58,6 +60,28 @@ public class MentorsController : ControllerBase
         var skills = profile.SkillsCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         return new MentorProfileDto(card, user.Bio, user.LinkedInUrl, user.TwitterUrl, skills, reviews);
+    }
+
+    [HttpPost("{userId:int}/reviews")]
+    public async Task<ActionResult<MentorProfileDto>> AddReview(int userId, CreateReviewRequest request)
+    {
+        var profile = await _db.MentorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null) return NotFound();
+
+        var rating = Math.Clamp(request.Rating, 1, 5);
+        _db.Reviews.Add(new Review
+        {
+            MentorUserId = userId,
+            StudentName = request.StudentName.Trim(),
+            Rating = rating,
+            Text = request.Text.Trim()
+        });
+
+        profile.Rating = (profile.Rating * profile.ReviewCount + rating) / (profile.ReviewCount + 1);
+        profile.ReviewCount++;
+        await _db.SaveChangesAsync();
+
+        return await Profile(userId);
     }
 
     internal static string FirstSentence(string bio)

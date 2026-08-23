@@ -1,13 +1,38 @@
+using System.Text;
 using System.Text.Json.Serialization;
 using MentorLink.Api.Data;
 using MentorLink.Api.Hubs;
+using MentorLink.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<JwtTokenService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "mentorlink-dev-signing-key-change-me-please-2026";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MentorLink";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtIssuer,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+builder.Services.AddAuthorization();
 
 // Postgres (Supabase) when a connection string is configured; in-memory otherwise
 // so the app runs out of the box. Set ConnectionStrings:DefaultConnection in
@@ -35,6 +60,8 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapFallbackToFile("index.html");

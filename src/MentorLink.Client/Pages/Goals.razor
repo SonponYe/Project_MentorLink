@@ -29,6 +29,16 @@
                     <option value="@GoalType.PersonalGrowth">Personal Growth</option>
                 </select>
             </div>
+            <div class="field">
+                <label for="g-mentor">Mentor</label>
+                <select class="inp" id="g-mentor" @bind="newMentorId">
+                    <option value="0">Unassigned</option>
+                    @foreach (var mentor in activeMentors)
+                    {
+                        <option value="@mentor.PartnerId">@mentor.PartnerName</option>
+                    }
+                </select>
+            </div>
             <div class="field wide">
                 <label for="g-miles">Milestones (one per line)</label>
                 <textarea class="inp" id="g-miles" style="min-height:84px"
@@ -93,15 +103,19 @@ else
 
 @code {
     private List<GoalDto>? goals;
+    private List<MentorshipDto> activeMentors = new();
     private bool showAdd;
     private string newTitle = "", newMilestones = "";
     private GoalType newType = GoalType.Academic;
+    private int newMentorId;
 
     protected override async Task OnInitializedAsync()
     {
         await State.EnsureLoadedAsync();
         if (State.CurrentUser is null) return;
         goals = await Api.GetGoalsAsync(State.CurrentUser.Id);
+        var mentorships = await Api.GetMentorshipsAsync(State.CurrentUser.Id) ?? new();
+        activeMentors = mentorships.Where(m => !m.IsPendingRequest && m.Status == MentorshipStatus.Active).ToList();
     }
 
     private async Task Toggle(int milestoneId)
@@ -121,11 +135,11 @@ else
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
         var created = await Api.CreateGoalAsync(new CreateGoalRequest(
-            State.CurrentUser.Id, newTitle, newType, null, milestones));
+            State.CurrentUser.Id, newTitle, newType, newMentorId == 0 ? null : newMentorId, milestones));
         if (created is not null)
         {
             goals?.Insert(0, created);
-            newTitle = ""; newMilestones = ""; showAdd = false;
+            newTitle = ""; newMilestones = ""; newMentorId = 0; showAdd = false;
         }
     }
 

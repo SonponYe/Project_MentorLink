@@ -7,13 +7,14 @@ namespace MentorLink.Client.Services;
 /// <summary>Client-side session state, persisted to localStorage so refreshes keep you signed in.</summary>
 public class AppState
 {
-    private const string StorageKey = "mentorlink-user";
+    private const string StorageKey = "mentorlink-session";
     private readonly IJSRuntime _js;
     private bool _loaded;
 
     public AppState(IJSRuntime js) => _js = js;
 
     public UserDto? CurrentUser { get; private set; }
+    public string? Token { get; private set; }
     public event Action? OnChange;
 
     public async Task EnsureLoadedAsync()
@@ -24,22 +25,30 @@ public class AppState
         {
             var json = await _js.InvokeAsync<string?>("mlStore.get", StorageKey);
             if (!string.IsNullOrEmpty(json))
-                CurrentUser = JsonSerializer.Deserialize<UserDto>(json);
+            {
+                var session = JsonSerializer.Deserialize<StoredSession>(json);
+                CurrentUser = session?.User;
+                Token = session?.Token;
+            }
         }
         catch { /* localStorage unavailable — stay signed out */ }
     }
 
-    public async Task SignInAsync(UserDto user)
+    public async Task SignInAsync(UserDto user, string token)
     {
         CurrentUser = user;
-        await _js.InvokeVoidAsync("mlStore.set", StorageKey, JsonSerializer.Serialize(user));
+        Token = token;
+        await _js.InvokeVoidAsync("mlStore.set", StorageKey, JsonSerializer.Serialize(new StoredSession(user, token)));
         OnChange?.Invoke();
     }
 
     public async Task SignOutAsync()
     {
         CurrentUser = null;
+        Token = null;
         await _js.InvokeVoidAsync("mlStore.del", StorageKey);
         OnChange?.Invoke();
     }
+
+    private record StoredSession(UserDto User, string Token);
 }

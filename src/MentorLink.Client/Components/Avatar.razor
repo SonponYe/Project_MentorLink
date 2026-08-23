@@ -1,7 +1,15 @@
-<span class="av @SizeClass @Tone">@Initials</span>
+@if (!string.IsNullOrEmpty(PhotoUrl))
+{
+    <img class="av av-img @SizeClass" src="@PhotoUrl" alt="@Name" />
+}
+else
+{
+    <span class="av @SizeClass @Tone">@Initials</span>
+}
 
 @code {
     [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string? PhotoUrl { get; set; }
     /// <summary>"", "sm", "md", "lg" or "xl"</summary>
     [Parameter] public string Size { get; set; } = "";
 

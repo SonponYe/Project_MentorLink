@@ -1,4 +1,5 @@
 using MentorLink.Api.Data;
+using MentorLink.Api.Services;
 using MentorLink.Shared.Dtos;
 using MentorLink.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -11,19 +12,20 @@ namespace MentorLink.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public AuthController(AppDbContext db) => _db = db;
+    private readonly JwtTokenService _tokens;
+    public AuthController(AppDbContext db, JwtTokenService tokens) { _db = db; _tokens = tokens; }
 
     [HttpPost("login")]
-    public async Task<ActionResult<UserDto>> Login(LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower().Trim());
-        if (user is null || user.Password != request.Password)
+        if (user is null || !PasswordHasher.Verify(request.Password, user.Password))
             return Unauthorized("Invalid email or password.");
-        return ToDto(user);
+        return new AuthResponse(ToDto(user), _tokens.CreateToken(user));
     }
 
     [HttpPost("signup")]
-    public async Task<ActionResult<UserDto>> Signup(SignupRequest request)
+    public async Task<ActionResult<AuthResponse>> Signup(SignupRequest request)
     {
         var email = request.Email.ToLower().Trim();
         if (await _db.Users.AnyAsync(u => u.Email == email))
@@ -33,7 +35,7 @@ public class AuthController : ControllerBase
         {
             FullName = request.FullName.Trim(),
             Email = email,
-            Password = request.Password,
+            Password = PasswordHasher.Hash(request.Password),
             Role = request.Role,
             Field = request.Field.Trim()
         };
@@ -52,9 +54,10 @@ public class AuthController : ControllerBase
             await _db.SaveChangesAsync();
         }
 
-        return ToDto(user);
+        return new AuthResponse(ToDto(user), _tokens.CreateToken(user));
     }
 
     internal static UserDto ToDto(User u)
-        => new(u.Id, u.FullName, u.Email, u.Role, u.Field, u.Bio, u.LinkedInUrl, u.TwitterUrl);
+        => new(u.Id, u.FullName, u.Email, u.Role, u.Field, u.Bio, u.LinkedInUrl, u.TwitterUrl,
+            u.PhotoUrl, u.EmailNotifs, u.InAppNotifs, u.RequestAlerts, u.GoalAlerts, u.IsPublic);
 }

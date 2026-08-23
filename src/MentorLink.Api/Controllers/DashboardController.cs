@@ -1,6 +1,7 @@
 using MentorLink.Api.Data;
 using MentorLink.Shared.Dtos;
 using MentorLink.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace MentorLink.Api.Controllers;
 
 [ApiController]
 [Route("api/dashboard")]
+[Authorize]
 public class DashboardController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -79,7 +81,7 @@ public class DashboardController : ControllerBase
         }).ToList();
 
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var sessions = mentorships.Count(m => m.LastSessionAt >= monthStart) + 6; // seeded history baseline
+        var sessions = mentorships.Count(m => m.LastSessionAt >= monthStart);
 
         return new MentorDashboardDto(mentorships.Count, pending.Count, sessions, requests, mentees);
     }

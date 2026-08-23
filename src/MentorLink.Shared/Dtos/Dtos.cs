@@ -5,13 +5,18 @@ namespace MentorLink.Shared.Dtos;
 // ---- Auth ----
 public record LoginRequest(string Email, string Password);
 public record SignupRequest(string FullName, string Email, string Field, string Password, UserRole Role);
-public record UserDto(int Id, string FullName, string Email, UserRole Role, string Field, string Bio, string LinkedInUrl, string TwitterUrl);
-public record UpdateProfileRequest(string FullName, string Email, string Field, string Bio, string LinkedInUrl, string TwitterUrl);
+public record UserDto(int Id, string FullName, string Email, UserRole Role, string Field, string Bio, string LinkedInUrl, string TwitterUrl,
+    string? PhotoUrl, bool EmailNotifs, bool InAppNotifs, bool RequestAlerts, bool GoalAlerts, bool IsPublic);
+public record AuthResponse(UserDto User, string Token);
+public record UpdateProfileRequest(string FullName, string Email, string Field, string Bio, string LinkedInUrl, string TwitterUrl, string? PhotoUrl);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public record UpdatePreferencesRequest(bool EmailNotifs, bool InAppNotifs, bool RequestAlerts, bool GoalAlerts, bool IsPublic);
 
 // ---- Mentors / discovery ----
 public record MentorCardDto(int UserId, string Name, string Title, string Company, string Field, double Rating, int ReviewCount, bool Available, string Bio);
 public record ReviewDto(string StudentName, int Rating, string Text);
 public record MentorProfileDto(MentorCardDto Card, string FullBio, string LinkedInUrl, string TwitterUrl, string[] Skills, List<ReviewDto> Reviews);
+public record CreateReviewRequest(string StudentName, int Rating, string Text);
 
 // ---- Goals ----
 public record MilestoneDto(int Id, string Title, bool IsDone);

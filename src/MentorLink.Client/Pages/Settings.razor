@@ -21,8 +21,13 @@
             <div class="card" style="padding:28px">
                 <span class="lab" style="display:block; margin-bottom:18px">Profile</span>
                 <div class="avatar-up">
-                    <Avatar Name="@fullName" Size="lg" />
-                    <button class="change" title="Photo upload is on the roadmap">Change Photo</button>
+                    <Avatar Name="@fullName" PhotoUrl="@photoUrl" Size="lg" />
+                    <label class="change" for="photo-file">Change Photo</label>
+                    <InputFile id="photo-file" style="display:none" accept="image/*" OnChange="OnPhotoSelected" />
+                    @if (photoError is not null)
+                    {
+                        <span class="mut" style="font-size:12px; color:#8f3232">@photoError</span>
+                    }
                 </div>
                 <div class="fgrid">
                     <div class="field"><label for="st-name">Full Name</label><input class="inp" id="st-name" @bind="fullName" /></div>
@@ -47,31 +52,58 @@
                 <span class="lab" style="display:block; margin-bottom:8px">Notifications</span>
                 <div class="tog-row">
                     <div><b>Email Notifications</b><span>Weekly digest and important account activity</span></div>
-                    <button type="button" class="switch @(togEmail ? "on" : "")" aria-label="Email notifications" @onclick="() => togEmail = !togEmail"></button>
+                    <button type="button" class="switch @(togEmail ? "on" : "")" aria-label="Email notifications" @onclick="() => TogglePref(() => togEmail = !togEmail)"></button>
                 </div>
                 <div class="tog-row">
                     <div><b>In-App Notifications</b><span>Activity inside MentorLink while you're signed in</span></div>
-                    <button type="button" class="switch @(togInApp ? "on" : "")" aria-label="In-app notifications" @onclick="() => togInApp = !togInApp"></button>
+                    <button type="button" class="switch @(togInApp ? "on" : "")" aria-label="In-app notifications" @onclick="() => TogglePref(() => togInApp = !togInApp)"></button>
                 </div>
                 <div class="tog-row">
                     <div><b>Mentorship Request Alerts</b><span>When a request is accepted, declined, or received</span></div>
-                    <button type="button" class="switch @(togRequests ? "on" : "")" aria-label="Mentorship request alerts" @onclick="() => togRequests = !togRequests"></button>
+                    <button type="button" class="switch @(togRequests ? "on" : "")" aria-label="Mentorship request alerts" @onclick="() => TogglePref(() => togRequests = !togRequests)"></button>
                 </div>
                 <div class="tog-row">
                     <div><b>Goal Reminder Alerts</b><span>Nudges when a milestone is due or going stale</span></div>
-                    <button type="button" class="switch @(togGoals ? "on" : "")" aria-label="Goal reminder alerts" @onclick="() => togGoals = !togGoals"></button>
+                    <button type="button" class="switch @(togGoals ? "on" : "")" aria-label="Goal reminder alerts" @onclick="() => TogglePref(() => togGoals = !togGoals)"></button>
                 </div>
+                @if (prefsSaved)
+                {
+                    <span class="save-note">Saved ✓</span>
+                }
+            </div>
+        }
+        else if (section == "privacy")
+        {
+            <div class="card" style="padding:24px 28px">
+                <span class="lab" style="display:block; margin-bottom:8px">Privacy</span>
+                <div class="tog-row">
+                    <div><b>Public Profile</b><span>Show your profile to mentors and students across MentorLink</span></div>
+                    <button type="button" class="switch @(togPublic ? "on" : "")" aria-label="Public profile" @onclick="() => TogglePref(() => togPublic = !togPublic)"></button>
+                </div>
+                @if (prefsSaved)
+                {
+                    <span class="save-note">Saved ✓</span>
+                }
             </div>
         }
         else
         {
-            <div class="card" style="padding:28px">
-                <span class="lab" style="display:block; margin-bottom:10px">@(section == "account" ? "Account" : "Privacy")</span>
-                <p class="mut" style="font-size:13.5px">
-                    @(section == "account"
-                        ? "Password changes and account deletion will live here."
-                        : "Profile visibility and data controls will live here.")
-                </p>
+            <div class="card" style="padding:28px; max-width:420px">
+                <span class="lab" style="display:block; margin-bottom:14px">Change Password</span>
+                @if (pwError is not null)
+                {
+                    <div class="form-error">@pwError</div>
+                }
+                @if (pwSaved)
+                {
+                    <div class="form-error" style="background:#f0f7f0; border-color:#c8e3c8; color:#2f6b32">Password updated ✓</div>
+                }
+                <div class="field"><label for="pw-cur">Current Password</label><input class="inp" id="pw-cur" type="password" @bind="currentPassword" /></div>
+                <div class="field"><label for="pw-new">New Password</label><input class="inp" id="pw-new" type="password" @bind="newPassword" /></div>
+                <div class="field"><label for="pw-conf">Confirm New Password</label><input class="inp" id="pw-conf" type="password" @bind="confirmPassword" /></div>
+                <div class="row" style="justify-content:flex-end">
+                    <button class="btn btn-dark" disabled="@pwBusy" @onclick="ChangePassword">@(pwBusy ? "Updating…" : "Update Password")</button>
+                </div>
             </div>
         }
     </div>
@@ -80,8 +112,14 @@
 @code {
     private string section = "profile";
     private string fullName = "", email = "", field = "", bio = "", linkedIn = "", twitter = "";
-    private bool togEmail = true, togInApp = true, togRequests = true, togGoals;
-    private bool busy, saved;
+    private string? photoUrl;
+    private string? photoError;
+    private bool togEmail = true, togInApp = true, togRequests = true, togGoals, togPublic = true;
+    private bool busy, saved, prefsSaved;
+
+    private string currentPassword = "", newPassword = "", confirmPassword = "";
+    private string? pwError;
+    private bool pwBusy, pwSaved;
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,6 +128,26 @@
         if (user is null) return;
         fullName = user.FullName; email = user.Email; field = user.Field;
         bio = user.Bio; linkedIn = user.LinkedInUrl; twitter = user.TwitterUrl;
+        photoUrl = user.PhotoUrl;
+        togEmail = user.EmailNotifs; togInApp = user.InAppNotifs;
+        togRequests = user.RequestAlerts; togGoals = user.GoalAlerts;
+        togPublic = user.IsPublic;
+    }
+
+    private async Task OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        photoError = null;
+        const long maxSize = 1_500_000;
+        if (e.File.Size > maxSize)
+        {
+            photoError = "Image must be under 1.5MB.";
+            return;
+        }
+
+        using var stream = e.File.OpenReadStream(maxSize);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        photoUrl = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
     }
 
     private async Task Save()
@@ -97,12 +155,42 @@
         if (State.CurrentUser is null) return;
         busy = true; saved = false;
         var updated = await Api.UpdateProfileAsync(State.CurrentUser.Id,
-            new UpdateProfileRequest(fullName, email, field, bio, linkedIn, twitter));
+            new UpdateProfileRequest(fullName, email, field, bio, linkedIn, twitter, photoUrl));
         busy = false;
         if (updated is not null)
         {
-            await State.SignInAsync(updated);
+            await State.SignInAsync(updated, State.Token!);
             saved = true;
         }
+    }
+
+    private async Task TogglePref(Action flip)
+    {
+        flip();
+        if (State.CurrentUser is null) return;
+        prefsSaved = false;
+        var updated = await Api.UpdatePreferencesAsync(State.CurrentUser.Id,
+            new UpdatePreferencesRequest(togEmail, togInApp, togRequests, togGoals, togPublic));
+        if (updated is not null)
+        {
+            await State.SignInAsync(updated, State.Token!);
+            prefsSaved = true;
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        pwError = null; pwSaved = false;
+        if (State.CurrentUser is null) return;
+        if (newPassword.Length < 8) { pwError = "New password needs at least 8 characters."; return; }
+        if (newPassword != confirmPassword) { pwError = "New password and confirmation don't match."; return; }
+
+        pwBusy = true;
+        var error = await Api.ChangePasswordAsync(State.CurrentUser.Id, new ChangePasswordRequest(currentPassword, newPassword));
+        pwBusy = false;
+
+        if (error is not null) { pwError = error; return; }
+        pwSaved = true;
+        currentPassword = ""; newPassword = ""; confirmPassword = "";
     }
 }

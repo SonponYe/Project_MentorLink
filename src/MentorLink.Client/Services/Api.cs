@@ -10,17 +10,17 @@ public class Api
     public Api(HttpClient http) => _http = http;
 
     // ---- Auth ----
-    public async Task<UserDto?> LoginAsync(LoginRequest request)
+    public async Task<AuthResponse?> LoginAsync(LoginRequest request)
     {
         var response = await _http.PostAsJsonAsync("api/auth/login", request);
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<UserDto>() : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<AuthResponse>() : null;
     }
 
-    public async Task<(UserDto? User, string? Error)> SignupAsync(SignupRequest request)
+    public async Task<(AuthResponse? Auth, string? Error)> SignupAsync(SignupRequest request)
     {
         var response = await _http.PostAsJsonAsync("api/auth/signup", request);
         if (response.IsSuccessStatusCode)
-            return (await response.Content.ReadFromJsonAsync<UserDto>(), null);
+            return (await response.Content.ReadFromJsonAsync<AuthResponse>(), null);
         return (null, await response.Content.ReadAsStringAsync());
     }
 
@@ -30,6 +30,18 @@ public class Api
         return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<UserDto>() : null;
     }
 
+    public async Task<UserDto?> UpdatePreferencesAsync(int userId, UpdatePreferencesRequest request)
+    {
+        var response = await _http.PutAsJsonAsync($"api/users/{userId}/preferences", request);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<UserDto>() : null;
+    }
+
+    public async Task<string?> ChangePasswordAsync(int userId, ChangePasswordRequest request)
+    {
+        var response = await _http.PostAsJsonAsync($"api/users/{userId}/change-password", request);
+        return response.IsSuccessStatusCode ? null : (await response.Content.ReadAsStringAsync()).Trim('"');
+    }
+
     // ---- Mentors ----
     public Task<List<MentorCardDto>?> DiscoverMentorsAsync(string? search = null)
         => _http.GetFromJsonAsync<List<MentorCardDto>>(
@@ -37,6 +49,12 @@ public class Api
 
     public Task<MentorProfileDto?> GetMentorProfileAsync(int userId)
         => _http.GetFromJsonAsync<MentorProfileDto>($"api/mentors/{userId}");
+
+    public async Task<MentorProfileDto?> AddReviewAsync(int mentorUserId, CreateReviewRequest request)
+    {
+        var response = await _http.PostAsJsonAsync($"api/mentors/{mentorUserId}/reviews", request);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<MentorProfileDto>() : null;
+    }
 
     // ---- Goals ----
     public Task<List<GoalDto>?> GetGoalsAsync(int studentId)

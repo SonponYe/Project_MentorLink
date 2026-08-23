@@ -79,6 +79,7 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------- Avatars ---------- */
 .av { display: grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; width: 40px; height: 40px; font-size: 14px; letter-spacing: .02em; }
+.av-img { object-fit: cover; }
 .av-sm { width: 32px; height: 32px; font-size: 12px; }
 .av-md { width: 48px; height: 48px; font-size: 16px; }
 .av-lg { width: 72px; height: 72px; font-size: 24px; }

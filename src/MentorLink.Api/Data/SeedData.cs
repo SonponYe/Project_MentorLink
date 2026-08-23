@@ -1,3 +1,4 @@
+using MentorLink.Api.Services;
 using MentorLink.Shared.Models;
 
 namespace MentorLink.Api.Data;
@@ -9,31 +10,32 @@ public static class SeedData
         if (db.Users.Any()) return;
 
         var now = DateTime.UtcNow;
+        var demoPassword = PasswordHasher.Hash("demo1234");
 
         // ---- Users ----
-        var amara  = new User { FullName = "Amara Osei",        Email = "amara@student.dev",  Password = "demo1234", Role = UserRole.Student, Field = "Computer Science",     Bio = "Third-year CS student chasing a data engineering internship. Currently deep in SQL, slowly falling in love with schemas.", LinkedInUrl = "https://linkedin.com/in/amaraosei" };
-        var david  = new User { FullName = "David Kim",         Email = "david@student.dev",  Password = "demo1234", Role = UserRole.Student, Field = "Visual Communication" };
-        var priya  = new User { FullName = "Priya Sharma",      Email = "priya@student.dev",  Password = "demo1234", Role = UserRole.Student, Field = "Statistics" };
-        var tunde  = new User { FullName = "Tunde Bakare",      Email = "tunde@student.dev",  Password = "demo1234", Role = UserRole.Student, Field = "Computer Science" };
-        var fatima = new User { FullName = "Fatima Al-Hassan",  Email = "fatima@student.dev", Password = "demo1234", Role = UserRole.Student, Field = "Statistics" };
+        var amara  = new User { FullName = "Amara Osei",        Email = "amara@student.dev",  Password = demoPassword, Role = UserRole.Student, Field = "Computer Science",     Bio = "Third-year CS student chasing a data engineering internship. Currently deep in SQL, slowly falling in love with schemas.", LinkedInUrl = "https://linkedin.com/in/amaraosei" };
+        var david  = new User { FullName = "David Kim",         Email = "david@student.dev",  Password = demoPassword, Role = UserRole.Student, Field = "Visual Communication" };
+        var priya  = new User { FullName = "Priya Sharma",      Email = "priya@student.dev",  Password = demoPassword, Role = UserRole.Student, Field = "Statistics" };
+        var tunde  = new User { FullName = "Tunde Bakare",      Email = "tunde@student.dev",  Password = demoPassword, Role = UserRole.Student, Field = "Computer Science" };
+        var fatima = new User { FullName = "Fatima Al-Hassan",  Email = "fatima@student.dev", Password = demoPassword, Role = UserRole.Student, Field = "Statistics" };
 
-        var nnamdi = new User { FullName = "Dr. Nnamdi Okafor", Email = "nnamdi@mentor.dev",  Password = "demo1234", Role = UserRole.Mentor, Field = "Data Science",
+        var nnamdi = new User { FullName = "Dr. Nnamdi Okafor", Email = "nnamdi@mentor.dev",  Password = demoPassword, Role = UserRole.Mentor, Field = "Data Science",
             Bio = "I've spent twelve years building data teams at Microsoft and, before that, two fintech startups in Lagos and London. I mentor because someone did it for me: a manager who spent thirty minutes a week asking the questions nobody else would. I work best with students who have a concrete goal — an internship to land, a thesis to finish, a portfolio project that keeps stalling — and I'll hold you to the milestones we set together. Expect direct feedback, real-world datasets, and the occasional homework assignment.",
             LinkedInUrl = "https://linkedin.com/in/nnamdiokafor", TwitterUrl = "https://twitter.com/nnamdiokafor" };
-        var sarah  = new User { FullName = "Sarah Chen",        Email = "sarah@mentor.dev",   Password = "demo1234", Role = UserRole.Mentor, Field = "Product Design",
+        var sarah  = new User { FullName = "Sarah Chen",        Email = "sarah@mentor.dev",   Password = demoPassword, Role = UserRole.Mentor, Field = "Product Design",
             Bio = "Design Director at Figma. I coach early-career designers on portfolios, storytelling, and surviving their first design critique.", LinkedInUrl = "https://linkedin.com/in/sarahchen" };
-        var james  = new User { FullName = "James Whitfield",   Email = "james@mentor.dev",   Password = "demo1234", Role = UserRole.Mentor, Field = "Finance",
+        var james  = new User { FullName = "James Whitfield",   Email = "james@mentor.dev",   Password = demoPassword, Role = UserRole.Mentor, Field = "Finance",
             Bio = "VP at Goldman Sachs. I help students break into investment banking without the family network." };
-        var leila  = new User { FullName = "Dr. Leila Haddad",  Email = "leila@mentor.dev",   Password = "demo1234", Role = UserRole.Mentor, Field = "Biomedical",
+        var leila  = new User { FullName = "Dr. Leila Haddad",  Email = "leila@mentor.dev",   Password = demoPassword, Role = UserRole.Mentor, Field = "Biomedical",
             Bio = "Research Lead at Genentech. From lab bench to first-author publication.", LinkedInUrl = "https://linkedin.com/in/leilahaddad" };
-        var marcus = new User { FullName = "Marcus Reid",       Email = "marcus@mentor.dev",  Password = "demo1234", Role = UserRole.Mentor, Field = "Entrepreneurship",
+        var marcus = new User { FullName = "Marcus Reid",       Email = "marcus@mentor.dev",  Password = demoPassword, Role = UserRole.Mentor, Field = "Entrepreneurship",
             Bio = "Built and sold two startups; now a founder-turned-investor helping the next wave get their first hundred customers." };
-        var elena  = new User { FullName = "Elena Petrova",     Email = "elena@mentor.dev",   Password = "demo1234", Role = UserRole.Mentor, Field = "Software Engineering",
+        var elena  = new User { FullName = "Elena Petrova",     Email = "elena@mentor.dev",   Password = demoPassword, Role = UserRole.Mentor, Field = "Software Engineering",
             Bio = "Staff Engineer at Spotify. System design interviews, demystified.", LinkedInUrl = "https://linkedin.com/in/elenapetrova" };
-        var robert = new User { FullName = "Robert Osei",       Email = "robert@mentor.dev",  Password = "demo1234", Role = UserRole.Mentor, Field = "Finance & Audit",
+        var robert = new User { FullName = "Robert Osei",       Email = "robert@mentor.dev",  Password = demoPassword, Role = UserRole.Mentor, Field = "Finance & Audit",
             Bio = "Senior Manager at KPMG Ghana.", LinkedInUrl = "https://linkedin.com/in/robertosei" };
 
-        var admin  = new User { FullName = "Rita Adeyemi",      Email = "admin@mentorlink.dev", Password = "demo1234", Role = UserRole.Admin, Field = "Operations" };
+        var admin  = new User { FullName = "Rita Adeyemi",      Email = "admin@mentorlink.dev", Password = demoPassword, Role = UserRole.Admin, Field = "Operations" };
 
         db.Users.AddRange(amara, david, priya, tunde, fatima, nnamdi, sarah, james, leila, marcus, elena, robert, admin);
         db.SaveChanges();

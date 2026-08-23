@@ -53,17 +53,17 @@
     {
         error = null;
         busy = true;
-        var user = await Api.LoginAsync(new LoginRequest(email, password));
+        var auth = await Api.LoginAsync(new LoginRequest(email, password));
         busy = false;
 
-        if (user is null)
+        if (auth is null)
         {
             error = "Invalid email or password.";
             return;
         }
 
-        await State.SignInAsync(user);
-        Nav.NavigateTo(user.Role switch
+        await State.SignInAsync(auth.User, auth.Token);
+        Nav.NavigateTo(auth.User.Role switch
         {
             UserRole.Mentor => "/mentor-dashboard",
             UserRole.Admin => "/admin/verifications",

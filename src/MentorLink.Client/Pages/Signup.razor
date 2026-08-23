@@ -77,16 +77,16 @@
         }
 
         busy = true;
-        var (user, apiError) = await Api.SignupAsync(new SignupRequest(fullName, email, field, password, role));
+        var (auth, apiError) = await Api.SignupAsync(new SignupRequest(fullName, email, field, password, role));
         busy = false;
 
-        if (user is null)
+        if (auth is null)
         {
             error = string.IsNullOrWhiteSpace(apiError) ? "Something went wrong — try again." : apiError.Trim('"');
             return;
         }
 
-        await State.SignInAsync(user);
-        Nav.NavigateTo(user.Role == UserRole.Mentor ? "/mentor-dashboard" : "/dashboard");
+        await State.SignInAsync(auth.User, auth.Token);
+        Nav.NavigateTo(auth.User.Role == UserRole.Mentor ? "/mentor-dashboard" : "/dashboard");
     }
 }

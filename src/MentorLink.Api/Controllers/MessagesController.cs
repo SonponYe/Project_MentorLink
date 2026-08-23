@@ -1,6 +1,7 @@
 using MentorLink.Api.Data;
 using MentorLink.Shared.Dtos;
 using MentorLink.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace MentorLink.Api.Controllers;
 
 [ApiController]
 [Route("api/messages")]
+[Authorize]
 public class MessagesController : ControllerBase
 {
     private readonly AppDbContext _db;

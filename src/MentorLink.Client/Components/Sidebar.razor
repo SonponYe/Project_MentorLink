@@ -25,7 +25,7 @@
         }
     </nav>
     <div class="me">
-        <Avatar Name="@(State.CurrentUser?.FullName ?? "")" Size="sm" />
+        <Avatar Name="@(State.CurrentUser?.FullName ?? "")" PhotoUrl="@State.CurrentUser?.PhotoUrl" Size="sm" />
         <div>
             <b>@State.CurrentUser?.FullName</b>
             <span>@RoleLine</span>
