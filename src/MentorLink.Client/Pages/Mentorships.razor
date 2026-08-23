@@ -66,7 +66,7 @@ else
             {
                 <span class="badge badge-dark">Completed</span>
                 <div class="acts">
-                    <button class="btn btn-out btn-sm" @onclick="() => ViewMentor(mentorship.PartnerId)">Leave a Review</button>
+                    <button class="btn btn-out btn-sm" @onclick="() => LeaveReview(mentorship.PartnerId)">Leave a Review</button>
                 </div>
             }
             else
@@ -95,6 +95,6 @@ else
     }
 
     private void OpenChat(int userId) => Nav.NavigateTo($"/messages?with={userId}");
-    private void ViewMentor(int userId) => Nav.NavigateTo($"/mentor/{userId}");
+    private void LeaveReview(int userId) => Nav.NavigateTo($"/mentor/{userId}?review=1");
     private void ViewGoals() => Nav.NavigateTo("/goals");
 }
