@@ -9,19 +9,46 @@ public class ChatHub : Hub
 {
     private readonly AppDbContext _db;
 
-    public ChatHub(AppDbContext db) => _db = db;
+    public ChatHub(AppDbContext db)
+    {
+        _db = db;
+    }
 
-    public Task Register(int userId)
-        => Groups.AddToGroupAsync(Context.ConnectionId, GroupFor(userId));
+    public async Task Register(int userId)
+    {
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            GetUserGroup(userId)
+        );
+    }
 
     public async Task SendMessage(SendMessageRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Content)) return;
+        if (string.IsNullOrWhiteSpace(request.Content))
+            return;
 
         var sender = await _db.Users.FindAsync(request.SenderId);
-        if (sender is null) return;
 
-        var message = new ChatMessage
+        if (sender == null)
+            return;
+
+        var message = CreateMessage(request);
+
+        _db.Messages.Add(message);
+
+        AddNotification(request.RecipientId, sender.FullName, message);
+
+        await _db.SaveChangesAsync();
+
+        var messageDto = CreateMessageDto(message);
+
+        await SendMessageToUser(request.RecipientId, messageDto);
+        await SendMessageToUser(request.SenderId, messageDto);
+    }
+
+    private static ChatMessage CreateMessage(SendMessageRequest request)
+    {
+        return new ChatMessage
         {
             SenderId = request.SenderId,
             RecipientId = request.RecipientId,
@@ -29,27 +56,53 @@ public class ChatHub : Hub
             SentAt = DateTime.UtcNow,
             IsRead = false
         };
-        _db.Messages.Add(message);
+    }
 
+    private void AddNotification(
+        int recipientId,
+        string senderName,
+        ChatMessage message)
+    {
         _db.Notifications.Add(new Notification
         {
-            UserId = request.RecipientId,
+            UserId = recipientId,
             Kind = NotificationKind.NewMessage,
-            Title = $"New message from {sender.FullName}",
+            Title = $"New message from {senderName}",
             Body = $"\"{Truncate(message.Content, 80)}\"",
             CreatedAt = message.SentAt,
             IsRead = false
         });
-
-        await _db.SaveChangesAsync();
-
-        var dto = new ChatMessageDto(message.Id, message.SenderId, message.RecipientId, message.Content, message.SentAt);
-        await Clients.Group(GroupFor(request.RecipientId)).SendAsync("ReceiveMessage", dto);
-        await Clients.Group(GroupFor(request.SenderId)).SendAsync("ReceiveMessage", dto);
     }
 
-    private static string GroupFor(int userId) => $"user-{userId}";
+    private static ChatMessageDto CreateMessageDto(ChatMessage message)
+    {
+        return new ChatMessageDto(
+            message.Id,
+            message.SenderId,
+            message.RecipientId,
+            message.Content,
+            message.SentAt
+        );
+    }
 
-    private static string Truncate(string s, int max)
-        => s.Length <= max ? s : s[..max] + "…";
+    private async Task SendMessageToUser(
+        int userId,
+        ChatMessageDto message)
+    {
+        await Clients
+            .Group(GetUserGroup(userId))
+            .SendAsync("ReceiveMessage", message);
+    }
+
+    private static string GetUserGroup(int userId)
+    {
+        return $"user-{userId}";
+    }
+
+    private static string Truncate(string text, int maxLength)
+    {
+        return text.Length <= maxLength
+            ? text
+            : text[..maxLength] + "…";
+    }
 }
