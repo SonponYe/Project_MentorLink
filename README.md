@@ -17,6 +17,14 @@ tests/
 docs/                   Architecture, API reference, user guide, test plan
 ```
 
+## Recent project updates
+
+- API and client projects are fully wired together with JWT authentication, authorization, and CORS for the Vercel frontend.
+- The app now includes the core mentor platform flow: sign-up/login, mentorship requests, acceptance/decline workflow, dashboards, goals, notifications, and SignalR live chat.
+- Default runtime behaviour uses an in-memory EF Core database so the project runs immediately without setup; PostgreSQL/Supabase can be enabled by setting a connection string.
+- The Blazor client contains the full student, mentor, and admin experience across the 14 screens listed below.
+- Automated xUnit tests cover auth, password hashing, access control, mentorship flow, goals, and notifications.
+
 ## Run it
 
 ```bash
