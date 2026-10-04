@@ -80,7 +80,7 @@
             </div>
             <div class="composer">
                 <button class="iconbtn" aria-label="Attach file" title="Attachments coming soon"><Icon Name="clip" Size="17" /></button>
-                <input class="inp" placeholder="Type a message…" @bind="draft" @bind:event="oninput"
+                <input class="inp" placeholder="Type a message……" @bind="draft" @bind:event="oninput"
                        @onkeydown="@(e => { if (e.Key == "Enter") _ = SendAsync(); })" />
                 <button class="sendbtn" aria-label="Send" @onclick="SendAsync"><Icon Name="send" Size="16" /></button>
             </div>
