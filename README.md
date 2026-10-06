@@ -56,6 +56,8 @@ dotnet test
 
 38 automated tests boot the API against an in-memory database and cover login and sign-up, password hashing, access control, the request → accept / decline flow, goals and notifications. The manual checklist is in [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
+GitHub Actions runs the QA workflow on every push and pull request to `main` or `master`. The workflow restores dependencies, builds the solution in Release mode, runs the xUnit suite, collects coverage, and uploads the `.trx` results as a workflow artifact.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) — components, deployment, data model, key flows

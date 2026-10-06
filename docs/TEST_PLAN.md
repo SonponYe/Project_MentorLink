@@ -10,6 +10,8 @@ Run them from the repository root:
 dotnet test
 ```
 
+Continuous integration is configured in `.github/workflows/qa.yml`. It runs on pushes and pull requests to `main` or `master`, builds the solution in Release mode, runs the xUnit suite, collects coverage, and uploads the test results as an artifact.
+
 | File | What it covers |
 |------|----------------|
 | `PasswordHasherTests.cs` | Correct / wrong passwords, unique salts, the plain password never stored, malformed hashes rejected |
