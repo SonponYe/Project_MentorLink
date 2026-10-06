@@ -1,0 +1,49 @@
+name: QA
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore dependencies
+        run: dotnet restore MentorLink.sln
+
+      - name: Build
+        run: dotnet build MentorLink.sln --configuration Release --no-restore
+
+      - name: Run automated tests
+        run: >
+          dotnet test MentorLink.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=mentorlink-tests.trx"
+          --results-directory TestResults
+          --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentorlink-test-results
+          path: TestResults/**
+          if-no-files-found: ignore
